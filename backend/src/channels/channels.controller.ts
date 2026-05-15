@@ -1,9 +1,8 @@
-import { Body, Controller, Get, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, GoneException, Post, UseGuards } from "@nestjs/common";
 import { CurrentUser } from "../auth/current-user.decorator";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { ChannelsService } from "./channels.service";
 import { ConnectChannelDto } from "./dto/connect-channel.dto";
-import { ConnectYoutubeChannelDto } from "./dto/connect-youtube-channel.dto";
 
 @Controller("channels")
 export class ChannelsController {
@@ -22,13 +21,13 @@ export class ChannelsController {
 
   @Post("connect-google")
   @UseGuards(JwtAuthGuard)
-  connectGoogle(@CurrentUser() user: { id: string }) {
-    return this.channelsService.connectGoogleOwnedChannel(user.id);
+  connectGoogle() {
+    throw new GoneException("La conexion por cuenta de Google fue deshabilitada. Conecta el canal por URL publica.");
   }
 
   @Post("connect-youtube")
   @UseGuards(JwtAuthGuard)
-  connectYoutube(@Body() payload: ConnectYoutubeChannelDto, @CurrentUser() user: { id: string }) {
-    return this.channelsService.connectYoutubeChannel(payload.accessToken, user.id);
+  connectYoutube() {
+    throw new GoneException("La conexion por OAuth de YouTube fue deshabilitada. Conecta el canal por URL publica.");
   }
 }
