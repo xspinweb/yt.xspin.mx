@@ -10,6 +10,17 @@ type CurrentUser = {
   email: string;
   avatarUrl?: string | null;
   hasConnectedChannel: boolean;
+  currentChannel: {
+    title: string;
+    handle: string | null;
+    channelUrl: string | null;
+    thumbnailUrl: string | null;
+    subscriberCount: string | null;
+    videoCount: string | null;
+    viewCount: string | null;
+    publishedAt: string | null;
+    niche: string | null;
+  } | null;
 };
 
 export default function DashboardPage() {
@@ -65,23 +76,42 @@ export default function DashboardPage() {
       <section className="dashboard-main">
         <header className="dashboard-top">
           <h1>Dashboard</h1>
-          <div className="avatar">{user.avatarUrl ? <img src={user.avatarUrl} alt="" /> : user.name.slice(0, 1)}</div>
+          <div className="avatar">
+            {user.currentChannel?.thumbnailUrl ? (
+              <img src={user.currentChannel.thumbnailUrl} alt="" />
+            ) : (
+              user.currentChannel?.title.slice(0, 1) ?? user.name.slice(0, 1)
+            )}
+          </div>
         </header>
         <section className="welcome-panel">
-          <h2>Bienvenido, Creador!</h2>
-          <p>Estas a un paso de empezar a recibir exposicion real para tus videos.</p>
+          <h2>{user.currentChannel?.title ?? "Canal conectado"}</h2>
+          <p>
+            {user.currentChannel?.channelUrl ? (
+              <a href={user.currentChannel.channelUrl} rel="noreferrer" target="_blank">
+                {user.currentChannel.channelUrl}
+              </a>
+            ) : (
+              "Canal pendiente de escaneo publico."
+            )}
+          </p>
+          <div className="channel-summary">
+            <span>{user.currentChannel?.handle ?? "Handle pendiente"}</span>
+            <span>{formatJoinDate(user.currentChannel?.publishedAt)}</span>
+            <span>{user.currentChannel?.niche ?? "Nicho pendiente"}</span>
+          </div>
           <div className="dashboard-metrics">
             <article>
               <span>Videos conectados</span>
-              <strong>12</strong>
+              <strong>{formatStat(user.currentChannel?.videoCount)}</strong>
             </article>
             <article>
-              <span>Visualizaciones obtenidas</span>
-              <strong>2,458</strong>
+              <span>Visualizaciones del canal</span>
+              <strong>{formatStat(user.currentChannel?.viewCount)}</strong>
             </article>
             <article>
-              <span>Suscripciones obtenidas</span>
-              <strong>184</strong>
+              <span>Suscriptores</span>
+              <strong>{formatStat(user.currentChannel?.subscriberCount)}</strong>
             </article>
           </div>
         </section>
@@ -96,6 +126,26 @@ export default function DashboardPage() {
       </section>
     </main>
   );
+}
+
+function formatStat(value?: string | null) {
+  if (!value) {
+    return "Pendiente";
+  }
+
+  return Number(value).toLocaleString("es-MX");
+}
+
+function formatJoinDate(value?: string | null) {
+  if (!value) {
+    return "Fecha pendiente";
+  }
+
+  return `Se unio el ${new Intl.DateTimeFormat("es-MX", {
+    day: "numeric",
+    month: "short",
+    year: "numeric"
+  }).format(new Date(value))}`;
 }
 
 function AppSidebar({ active, onLogout }: { active: string; onLogout: () => void }) {

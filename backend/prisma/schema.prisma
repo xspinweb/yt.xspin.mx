@@ -63,7 +63,13 @@ model Channel {
   ownerUserId    String
   youtubeChannelId String?      @unique
   handle         String?
+  channelUrl     String?
   title          String
+  thumbnailUrl   String?
+  subscriberCount String?
+  videoCount     String?
+  viewCount      String?
+  publishedAt    DateTime?
   niche          String?
   language       String?        @default("es")
   isActive       Boolean        @default(true)

@@ -1257,6 +1257,25 @@ em {
   margin-top: 24px;
 }
 
+.channel-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.channel-summary span {
+  display: inline-flex;
+  min-height: 30px;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  padding: 0 12px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
 .dashboard-metrics article {
   padding: 18px;
   border: 1px solid rgba(255, 255, 255, 0.1);

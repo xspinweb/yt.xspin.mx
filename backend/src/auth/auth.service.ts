@@ -1,6 +1,6 @@
 import { ConflictException, Injectable, UnauthorizedException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { AuthProvider, User } from "@prisma/client";
+import { AuthProvider, Channel, User } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
 import * as jwt from "jsonwebtoken";
 import { OAuth2Client } from "google-auth-library";
@@ -12,6 +12,17 @@ import { RegisterDto } from "./dto/register.dto";
 
 type PublicUser = Omit<User, "passwordHash"> & {
   hasConnectedChannel: boolean;
+  currentChannel: {
+    title: string;
+    handle: string | null;
+    channelUrl: string | null;
+    thumbnailUrl: string | null;
+    subscriberCount: string | null;
+    videoCount: string | null;
+    viewCount: string | null;
+    publishedAt: Date | null;
+    niche: string | null;
+  } | null;
 };
 
 @Injectable()
@@ -147,7 +158,7 @@ export class AuthService {
     }
   }
 
-  private createAuthResponse(user: User & { channels: Array<{ isActive: boolean }> }) {
+  private createAuthResponse(user: User & { channels?: Channel[] }) {
     const accessToken = this.signToken(user);
 
     return {
@@ -170,12 +181,26 @@ export class AuthService {
     );
   }
 
-  private toPublicUser(user: User & { channels?: Array<{ isActive: boolean }> }): PublicUser {
-    const { passwordHash: _passwordHash, ...safeUser } = user;
+  private toPublicUser(user: User & { channels?: Channel[] }): PublicUser {
+    const { passwordHash: _passwordHash, channels: _channels, ...safeUser } = user;
+    const currentChannel = user.channels?.find((channel) => channel.isActive);
 
     return {
       ...safeUser,
-      hasConnectedChannel: Boolean(user.channels?.some((channel: { isActive: boolean }) => channel.isActive))
+      hasConnectedChannel: Boolean(currentChannel),
+      currentChannel: currentChannel
+        ? {
+            title: currentChannel.title,
+            handle: currentChannel.handle,
+            channelUrl: currentChannel.channelUrl,
+            thumbnailUrl: currentChannel.thumbnailUrl,
+            subscriberCount: currentChannel.subscriberCount,
+            videoCount: currentChannel.videoCount,
+            viewCount: currentChannel.viewCount,
+            publishedAt: currentChannel.publishedAt,
+            niche: currentChannel.niche
+          }
+        : null
     };
   }
 }
