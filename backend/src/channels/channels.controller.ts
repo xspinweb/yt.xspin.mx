@@ -13,6 +13,12 @@ export class ChannelsController {
     return this.channelsService.findAll();
   }
 
+  @Get("me/videos")
+  @UseGuards(JwtAuthGuard)
+  findMyVideos(@CurrentUser() user: { id: string }) {
+    return this.channelsService.findMyVideos(user.id);
+  }
+
   @Post("connect")
   @UseGuards(JwtAuthGuard)
   connect(@Body() payload: ConnectChannelDto, @CurrentUser() user: { id: string }) {

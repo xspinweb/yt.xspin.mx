@@ -92,6 +92,7 @@ model Video {
   title          String
   thumbnailUrl   String?
   durationSec    Int?
+  viewCount      String?
   publishedAt    DateTime?
   niche          String?
   language       String?        @default("es")

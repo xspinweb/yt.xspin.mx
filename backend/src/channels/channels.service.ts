@@ -19,6 +19,11 @@ type Channel = {
   status: "pending_sync" | "synced";
 };
 
+type ChannelMetadata = Omit<Channel, "id" | "niche" | "detectedVideos" | "exposureScore" | "status"> & {
+  youtubeChannelId?: string | null;
+  uploadsPlaylistId?: string | null;
+};
+
 type YoutubeChannelsResponse = {
   items?: Array<{
     id: string;
@@ -32,6 +37,50 @@ type YoutubeChannelsResponse = {
       hiddenSubscriberCount?: boolean;
       subscriberCount?: string;
       videoCount?: string;
+      viewCount?: string;
+    };
+    contentDetails?: {
+      relatedPlaylists?: {
+        uploads?: string;
+      };
+    };
+  }>;
+  error?: {
+    message?: string;
+  };
+};
+
+type YoutubePlaylistItemsResponse = {
+  items?: Array<{
+    snippet?: {
+      title?: string;
+      publishedAt?: string;
+      thumbnails?: Record<string, { url?: string }>;
+      resourceId?: {
+        videoId?: string;
+      };
+    };
+    contentDetails?: {
+      videoId?: string;
+    };
+  }>;
+  error?: {
+    message?: string;
+  };
+};
+
+type YoutubeVideosResponse = {
+  items?: Array<{
+    id: string;
+    snippet?: {
+      title?: string;
+      publishedAt?: string;
+      thumbnails?: Record<string, { url?: string }>;
+    };
+    contentDetails?: {
+      duration?: string;
+    };
+    statistics?: {
       viewCount?: string;
     };
   }>;
@@ -63,6 +112,49 @@ export class ChannelsService {
   findAll() {
     return {
       data: this.channels
+    };
+  }
+
+  async findMyVideos(ownerUserId: string) {
+    const channel = await this.prisma.channel.findFirst({
+      where: {
+        ownerUserId,
+        isActive: true
+      },
+      include: {
+        videos: {
+          where: { isActive: true },
+          orderBy: { publishedAt: "desc" },
+          take: 48
+        }
+      }
+    });
+
+    if (!channel) {
+      return {
+        data: {
+          videos: [],
+          shorts: []
+        }
+      };
+    }
+
+    const formattedVideos = channel.videos.map((video) => ({
+      id: video.id,
+      youtubeVideoId: video.youtubeVideoId,
+      title: video.title,
+      thumbnailUrl: video.thumbnailUrl,
+      durationSec: video.durationSec,
+      viewCount: video.viewCount,
+      publishedAt: video.publishedAt,
+      url: video.youtubeVideoId ? `https://www.youtube.com/watch?v=${video.youtubeVideoId}` : null
+    }));
+
+    return {
+      data: {
+        videos: formattedVideos.filter((video) => !video.durationSec || video.durationSec > 60),
+        shorts: formattedVideos.filter((video) => video.durationSec && video.durationSec <= 60)
+      }
     };
   }
 
@@ -117,7 +209,7 @@ export class ChannelsService {
     }
 
     const params = new URLSearchParams({
-      part: "snippet,statistics",
+      part: "snippet,statistics,contentDetails",
       key: apiKey
     });
 
@@ -155,7 +247,8 @@ export class ChannelsService {
       subscriberCount: channel.statistics?.hiddenSubscriberCount ? null : channel.statistics?.subscriberCount ?? null,
       videoCount: channel.statistics?.videoCount ?? null,
       viewCount: channel.statistics?.viewCount ?? null,
-      publishedAt: channel.snippet?.publishedAt ? new Date(channel.snippet.publishedAt) : null
+      publishedAt: channel.snippet?.publishedAt ? new Date(channel.snippet.publishedAt) : null,
+      uploadsPlaylistId: channel.contentDetails?.relatedPlaylists?.uploads ?? null
     };
   }
 
@@ -184,7 +277,7 @@ export class ChannelsService {
     };
   }
 
-  private async upsertConnectedChannel(ownerUserId: string, metadata: Omit<Channel, "id" | "niche" | "detectedVideos" | "exposureScore" | "status"> & { youtubeChannelId?: string | null }, niche: string, youtubeChannelId: string | null = null) {
+  private async upsertConnectedChannel(ownerUserId: string, metadata: ChannelMetadata, niche: string, youtubeChannelId: string | null = null) {
     const existingChannel = await this.prisma.channel.findFirst({
       where: {
         ownerUserId,
@@ -228,6 +321,8 @@ export class ChannelsService {
           }
         });
 
+    const detectedVideos = await this.syncPublicVideos(channel.id, metadata.uploadsPlaylistId, niche);
+
     const preview: Channel = {
       id: channel.id,
       handle: metadata.handle,
@@ -239,7 +334,7 @@ export class ChannelsService {
       viewCount: metadata.viewCount,
       publishedAt: metadata.publishedAt,
       niche,
-      detectedVideos: 0,
+      detectedVideos,
       exposureScore: 0,
       status: "pending_sync"
     };
@@ -282,4 +377,108 @@ export class ChannelsService {
       channelUrl: trimmed.startsWith("http") ? trimmed : `https://www.youtube.com/${handle}`
     };
   }
+
+  private async syncPublicVideos(channelId: string, uploadsPlaylistId: string | null | undefined, niche: string) {
+    const apiKey = this.config.get<string>("YOUTUBE_API_KEY");
+
+    if (!apiKey || !uploadsPlaylistId) {
+      return 0;
+    }
+
+    const playlistParams = new URLSearchParams({
+      part: "snippet,contentDetails",
+      playlistId: uploadsPlaylistId,
+      maxResults: "36",
+      key: apiKey
+    });
+    const playlistResponse = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?${playlistParams.toString()}`);
+    const playlistData = (await playlistResponse.json()) as YoutubePlaylistItemsResponse;
+
+    if (!playlistResponse.ok) {
+      throw new BadGatewayException(playlistData.error?.message ?? "No pudimos consultar los videos publicos del canal.");
+    }
+
+    const videoIds = [
+      ...new Set(
+        playlistData.items
+          ?.map((item) => item.contentDetails?.videoId ?? item.snippet?.resourceId?.videoId)
+          .filter((videoId): videoId is string => Boolean(videoId)) ?? []
+      )
+    ];
+
+    if (!videoIds.length) {
+      return 0;
+    }
+
+    const videosParams = new URLSearchParams({
+      part: "snippet,contentDetails,statistics",
+      id: videoIds.join(","),
+      key: apiKey
+    });
+    const videosResponse = await fetch(`https://www.googleapis.com/youtube/v3/videos?${videosParams.toString()}`);
+    const videosData = (await videosResponse.json()) as YoutubeVideosResponse;
+
+    if (!videosResponse.ok) {
+      throw new BadGatewayException(videosData.error?.message ?? "No pudimos consultar los detalles de los videos.");
+    }
+
+    await Promise.all(
+      (videosData.items ?? []).map((video) =>
+        this.prisma.video.upsert({
+          where: { youtubeVideoId: video.id },
+          update: {
+            channelId,
+            title: video.snippet?.title ?? "Video de YouTube",
+            thumbnailUrl:
+              video.snippet?.thumbnails?.maxres?.url ??
+              video.snippet?.thumbnails?.high?.url ??
+              video.snippet?.thumbnails?.medium?.url ??
+              video.snippet?.thumbnails?.default?.url,
+            durationSec: parseYoutubeDuration(video.contentDetails?.duration),
+            viewCount: video.statistics?.viewCount ?? null,
+            publishedAt: video.snippet?.publishedAt ? new Date(video.snippet.publishedAt) : null,
+            niche,
+            language: "es",
+            isActive: true
+          },
+          create: {
+            channelId,
+            youtubeVideoId: video.id,
+            title: video.snippet?.title ?? "Video de YouTube",
+            thumbnailUrl:
+              video.snippet?.thumbnails?.maxres?.url ??
+              video.snippet?.thumbnails?.high?.url ??
+              video.snippet?.thumbnails?.medium?.url ??
+              video.snippet?.thumbnails?.default?.url,
+            durationSec: parseYoutubeDuration(video.contentDetails?.duration),
+            viewCount: video.statistics?.viewCount ?? null,
+            publishedAt: video.snippet?.publishedAt ? new Date(video.snippet.publishedAt) : null,
+            niche,
+            language: "es",
+            isActive: true
+          }
+        })
+      )
+    );
+
+    return videosData.items?.length ?? 0;
+  }
+}
+
+function parseYoutubeDuration(duration?: string) {
+  if (!duration) {
+    return null;
+  }
+
+  const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+
+  if (!match) {
+    return null;
+  }
+
+  const hours = Number(match[1] ?? 0);
+  const minutes = Number(match[2] ?? 0);
+  const seconds = Number(match[3] ?? 0);
+
+  return hours * 3600 + minutes * 60 + seconds;
 }

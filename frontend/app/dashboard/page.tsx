@@ -24,43 +24,23 @@ type CurrentUser = {
   } | null;
 };
 
-const videoCards = [
-  {
-    title: "5 Claves para crecer en YouTube",
-    views: "1.2K",
-    comments: "128",
-    duration: "8:45",
-    image: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=760&q=80"
-  },
-  {
-    title: "Mi setup para crear contenido",
-    views: "982",
-    comments: "96",
-    duration: "12:31",
-    image: "https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=760&q=80"
-  },
-  {
-    title: "Como edito mis videos",
-    views: "1.4K",
-    comments: "156",
-    duration: "7:03",
-    image: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=760&q=80"
-  },
-  {
-    title: "Errores que frenan tu canal",
-    views: "756",
-    comments: "74",
-    duration: "9:16",
-    image: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=760&q=80"
-  },
-  {
-    title: "Mi iluminacion economica",
-    views: "1.1K",
-    comments: "103",
-    duration: "6:22",
-    image: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=760&q=80"
-  }
-];
+type ChannelVideo = {
+  id: string;
+  youtubeVideoId: string | null;
+  title: string;
+  thumbnailUrl: string | null;
+  durationSec: number | null;
+  viewCount: string | null;
+  publishedAt: string | null;
+  url: string | null;
+};
+
+type ChannelVideosResponse = {
+  data?: {
+    videos?: ChannelVideo[];
+    shorts?: ChannelVideo[];
+  };
+};
 
 const recentActivity = [
   { icon: "eye", title: "Tu video fue visto completamente", time: "Hace 2 min", result: "+1 vista", tone: "purple" },
@@ -73,6 +53,11 @@ const recentActivity = [
 export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<CurrentUser | null>(null);
+  const [channelVideos, setChannelVideos] = useState<{ videos: ChannelVideo[]; shorts: ChannelVideo[] }>({
+    videos: [],
+    shorts: []
+  });
+  const [isLoadingVideos, setIsLoadingVideos] = useState(true);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -101,6 +86,29 @@ export default function DashboardPage() {
         }
 
         setUser(data.user);
+        fetch(`${API_URL}/channels/me/videos`, {
+          headers: { Authorization: `Bearer ${token}` },
+          credentials: "include"
+        })
+          .then(async (videosResponse) => {
+            if (!videosResponse.ok) {
+              throw new Error("Videos request failed");
+            }
+
+            return videosResponse.json();
+          })
+          .then((videosData: ChannelVideosResponse) => {
+            setChannelVideos({
+              videos: videosData.data?.videos ?? [],
+              shorts: videosData.data?.shorts ?? []
+            });
+          })
+          .catch(() => {
+            setChannelVideos({ videos: [], shorts: [] });
+          })
+          .finally(() => {
+            setIsLoadingVideos(false);
+          });
       })
       .catch(() => {
         window.localStorage.removeItem("ytx_access_token");
@@ -184,30 +192,8 @@ export default function DashboardPage() {
         </section>
 
         <section className="dashboard-card video-strip">
-          <div className="section-title-row">
-            <h2>Tus videos</h2>
-            <a href="#">Ver todos</a>
-          </div>
-          <div className="video-row">
-            {videoCards.map((video) => (
-              <article className="dashboard-video-card" key={video.title}>
-                <div className="video-thumb">
-                  <img src={video.image} alt="" />
-                  <span>{video.duration}</span>
-                </div>
-                <h3>{video.title}</h3>
-                <p>
-                  <Icon name="playOutline" />
-                  {video.views}
-                  <Icon name="message" />
-                  {video.comments}
-                </p>
-              </article>
-            ))}
-            <button className="next-video" aria-label="Siguiente video" type="button">
-              <Icon name="chevronRight" />
-            </button>
-          </div>
+          <VideoCarousel title="Videos" items={channelVideos.videos} isLoading={isLoadingVideos} />
+          <VideoCarousel title="Shorts" items={channelVideos.shorts} isLoading={isLoadingVideos} variant="shorts" />
         </section>
 
         <section className="dashboard-lower-grid">
@@ -269,6 +255,51 @@ export default function DashboardPage() {
   );
 }
 
+function VideoCarousel({
+  title,
+  items,
+  isLoading,
+  variant = "videos"
+}: {
+  title: string;
+  items: ChannelVideo[];
+  isLoading: boolean;
+  variant?: "videos" | "shorts";
+}) {
+  return (
+    <div className="dashboard-video-section">
+      <div className="section-title-row">
+        <h2>{title}</h2>
+        {items.length > 0 && <a href="#">Ver todos</a>}
+      </div>
+      {isLoading ? (
+        <p className="video-empty">Cargando videos del canal...</p>
+      ) : items.length ? (
+        <div className={variant === "shorts" ? "video-row shorts-row" : "video-row"}>
+          {items.map((video) => (
+            <a className={variant === "shorts" ? "dashboard-video-card short" : "dashboard-video-card"} href={video.url ?? "#"} key={video.id} target="_blank" rel="noreferrer">
+              <div className="video-thumb">
+                {video.thumbnailUrl ? <img src={video.thumbnailUrl} alt="" /> : <div className="thumb-placeholder">YT</div>}
+                <span>{formatDuration(video.durationSec)}</span>
+              </div>
+              <h3>{video.title}</h3>
+              <p>
+                <Icon name="playOutline" />
+                {formatCompact(video.viewCount, "0")} visualizaciones
+              </p>
+            </a>
+          ))}
+          <button className="next-video" aria-label={`Siguiente ${title}`} type="button">
+            <Icon name="chevronRight" />
+          </button>
+        </div>
+      ) : (
+        <p className="video-empty">Aun no encontramos {title.toLowerCase()} publicos para este canal.</p>
+      )}
+    </div>
+  );
+}
+
 function UserAvatar({ user }: { user: CurrentUser }) {
   return (
     <div className="dashboard-avatar user">
@@ -310,6 +341,22 @@ function formatCompact(value?: string | null, fallback = "0") {
     notation: "compact",
     maximumFractionDigits: 1
   }).format(Number(value));
+}
+
+function formatDuration(durationSec?: number | null) {
+  if (!durationSec) {
+    return "0:00";
+  }
+
+  const hours = Math.floor(durationSec / 3600);
+  const minutes = Math.floor((durationSec % 3600) / 60);
+  const seconds = durationSec % 60;
+
+  if (hours) {
+    return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  }
+
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
 }
 
 function DashboardSidebar({ active, onLogout }: { active: string; onLogout: () => void }) {
