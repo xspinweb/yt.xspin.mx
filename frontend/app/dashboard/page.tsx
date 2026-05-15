@@ -24,13 +24,6 @@ type CurrentUser = {
   } | null;
 };
 
-const metricCards = [
-  { label: "Vistas recibidas", value: "12,453", trend: "+23%", icon: "eye" },
-  { label: "Suscriptores recibidos", value: "732", trend: "+18%", icon: "user" },
-  { label: "Vistas dadas", value: "8,920", trend: "+15%", icon: "play" },
-  { label: "Suscripciones dadas", value: "568", trend: "+10%", icon: "users" }
-];
-
 const videoCards = [
   {
     title: "5 Claves para crecer en YouTube",
@@ -127,6 +120,12 @@ export default function DashboardPage() {
   const channel = user.currentChannel;
   const channelTitle = channel?.title ?? user.name;
   const subscribers = formatCompact(channel?.subscriberCount, "12.4K");
+  const metricCards = [
+    { label: "Visualizaciones del canal", value: formatStat(channel?.viewCount, "Pendiente"), trend: "+23%", icon: "eye" },
+    { label: "Suscriptores del canal", value: formatStat(channel?.subscriberCount, "Pendiente"), trend: "+18%", icon: "user" },
+    { label: "Videos publicados", value: formatStat(channel?.videoCount, "Pendiente"), trend: "+15%", icon: "play" },
+    { label: "Exposiciones generadas", value: "568", trend: "+10%", icon: "users" }
+  ];
 
   return (
     <main className="dashboard-shell">
@@ -160,11 +159,11 @@ export default function DashboardPage() {
         </header>
 
         <section className="dashboard-stat-grid">
-          {metricCards.map((metric, index) => (
+          {metricCards.map((metric) => (
             <article className="dashboard-stat-card" key={metric.label}>
               <div>
-                <span>{index === 0 ? "Visualizaciones del canal" : metric.label}</span>
-                <strong>{index === 0 ? formatStat(channel?.viewCount, metric.value) : metric.value}</strong>
+                <span>{metric.label}</span>
+                <strong>{metric.value}</strong>
                 <small>{metric.trend}</small>
                 <em>vs. semana pasada</em>
               </div>

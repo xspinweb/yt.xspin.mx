@@ -1,4 +1,4 @@
-import { BadGatewayException, Injectable, UnauthorizedException } from "@nestjs/common";
+import { BadGatewayException, Injectable, ServiceUnavailableException, UnauthorizedException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { PrismaService } from "../prisma/prisma.service";
 import { ConnectChannelDto } from "./dto/connect-channel.dto";
@@ -113,7 +113,7 @@ export class ChannelsService {
     const apiKey = this.config.get<string>("YOUTUBE_API_KEY");
 
     if (!apiKey) {
-      return fallback;
+      throw new ServiceUnavailableException("Falta configurar YOUTUBE_API_KEY para leer datos reales del canal.");
     }
 
     const params = new URLSearchParams({
@@ -124,7 +124,7 @@ export class ChannelsService {
     if (fallback.youtubeChannelId) {
       params.set("id", fallback.youtubeChannelId);
     } else {
-      params.set("forHandle", fallback.handle.replace("@", ""));
+      params.set("forHandle", fallback.handle);
     }
 
     const response = await fetch(`https://www.googleapis.com/youtube/v3/channels?${params.toString()}`);
