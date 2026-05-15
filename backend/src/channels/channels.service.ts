@@ -51,6 +51,7 @@ type YoutubeChannelsResponse = {
 };
 
 type YoutubePlaylistItemsResponse = {
+  nextPageToken?: string;
   items?: Array<{
     snippet?: {
       title?: string;
@@ -117,8 +118,9 @@ export class ChannelsService {
 
   async findMyVideos(ownerUserId: string) {
     let channel = await this.findActiveChannelWithVideos(ownerUserId);
+    const expectedVideoCount = Number(channel?.videoCount ?? 0);
 
-    if (channel?.youtubeChannelId && channel.videos.length === 0) {
+    if (channel?.youtubeChannelId && (channel.videos.length === 0 || (expectedVideoCount > 0 && channel.videos.length < expectedVideoCount))) {
       const uploadsPlaylistId = await this.resolveUploadsPlaylistId(channel.youtubeChannelId);
       await this.syncPublicVideos(channel.id, uploadsPlaylistId, channel.niche ?? "Tecnologia");
       channel = await this.findActiveChannelWithVideos(ownerUserId);
@@ -161,8 +163,7 @@ export class ChannelsService {
       include: {
         videos: {
           where: { isActive: true },
-          orderBy: { publishedAt: "desc" },
-          take: 48
+          orderBy: { publishedAt: "desc" }
         }
       }
     });
@@ -395,83 +396,93 @@ export class ChannelsService {
       return 0;
     }
 
-    const playlistParams = new URLSearchParams({
-      part: "snippet,contentDetails",
-      playlistId: uploadsPlaylistId,
-      maxResults: "36",
-      key: apiKey
-    });
-    const playlistResponse = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?${playlistParams.toString()}`);
-    const playlistData = (await playlistResponse.json()) as YoutubePlaylistItemsResponse;
-
-    if (!playlistResponse.ok) {
-      throw new BadGatewayException(playlistData.error?.message ?? "No pudimos consultar los videos publicos del canal.");
-    }
-
-    const videoIds = [
-      ...new Set(
-        playlistData.items
-          ?.map((item) => item.contentDetails?.videoId ?? item.snippet?.resourceId?.videoId)
-          .filter((videoId): videoId is string => Boolean(videoId)) ?? []
-      )
-    ];
+    const videoIds = await this.fetchAllUploadVideoIds(uploadsPlaylistId, apiKey);
 
     if (!videoIds.length) {
       return 0;
     }
 
-    const videosParams = new URLSearchParams({
-      part: "snippet,contentDetails,statistics",
-      id: videoIds.join(","),
-      key: apiKey
-    });
-    const videosResponse = await fetch(`https://www.googleapis.com/youtube/v3/videos?${videosParams.toString()}`);
-    const videosData = (await videosResponse.json()) as YoutubeVideosResponse;
+    let syncedCount = 0;
 
-    if (!videosResponse.ok) {
-      throw new BadGatewayException(videosData.error?.message ?? "No pudimos consultar los detalles de los videos.");
+    for (const videoIdChunk of chunk(videoIds, 50)) {
+      const videosParams = new URLSearchParams({
+        part: "snippet,contentDetails,statistics",
+        id: videoIdChunk.join(","),
+        key: apiKey
+      });
+      const videosResponse = await fetch(`https://www.googleapis.com/youtube/v3/videos?${videosParams.toString()}`);
+      const videosData = (await videosResponse.json()) as YoutubeVideosResponse;
+
+      if (!videosResponse.ok) {
+        throw new BadGatewayException(videosData.error?.message ?? "No pudimos consultar los detalles de los videos.");
+      }
+
+      await Promise.all((videosData.items ?? []).map((video) => this.upsertPublicVideo(channelId, video, niche)));
+      syncedCount += videosData.items?.length ?? 0;
     }
 
-    await Promise.all(
-      (videosData.items ?? []).map((video) =>
-        this.prisma.video.upsert({
-          where: { youtubeVideoId: video.id },
-          update: {
-            channelId,
-            title: video.snippet?.title ?? "Video de YouTube",
-            thumbnailUrl:
-              video.snippet?.thumbnails?.maxres?.url ??
-              video.snippet?.thumbnails?.high?.url ??
-              video.snippet?.thumbnails?.medium?.url ??
-              video.snippet?.thumbnails?.default?.url,
-            durationSec: parseYoutubeDuration(video.contentDetails?.duration),
-            viewCount: video.statistics?.viewCount ?? null,
-            publishedAt: video.snippet?.publishedAt ? new Date(video.snippet.publishedAt) : null,
-            niche,
-            language: "es",
-            isActive: true
-          },
-          create: {
-            channelId,
-            youtubeVideoId: video.id,
-            title: video.snippet?.title ?? "Video de YouTube",
-            thumbnailUrl:
-              video.snippet?.thumbnails?.maxres?.url ??
-              video.snippet?.thumbnails?.high?.url ??
-              video.snippet?.thumbnails?.medium?.url ??
-              video.snippet?.thumbnails?.default?.url,
-            durationSec: parseYoutubeDuration(video.contentDetails?.duration),
-            viewCount: video.statistics?.viewCount ?? null,
-            publishedAt: video.snippet?.publishedAt ? new Date(video.snippet.publishedAt) : null,
-            niche,
-            language: "es",
-            isActive: true
-          }
-        })
-      )
-    );
+    return syncedCount;
+  }
 
-    return videosData.items?.length ?? 0;
+  private async fetchAllUploadVideoIds(uploadsPlaylistId: string, apiKey: string) {
+    const videoIds: string[] = [];
+    let nextPageToken: string | undefined;
+
+    do {
+      const playlistParams = new URLSearchParams({
+        part: "snippet,contentDetails",
+        playlistId: uploadsPlaylistId,
+        maxResults: "50",
+        key: apiKey
+      });
+
+      if (nextPageToken) {
+        playlistParams.set("pageToken", nextPageToken);
+      }
+
+      const playlistResponse = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?${playlistParams.toString()}`);
+      const playlistData = (await playlistResponse.json()) as YoutubePlaylistItemsResponse;
+
+      if (!playlistResponse.ok) {
+        throw new BadGatewayException(playlistData.error?.message ?? "No pudimos consultar los videos publicos del canal.");
+      }
+
+      videoIds.push(
+        ...(playlistData.items
+          ?.map((item) => item.contentDetails?.videoId ?? item.snippet?.resourceId?.videoId)
+          .filter((videoId): videoId is string => Boolean(videoId)) ?? [])
+      );
+      nextPageToken = playlistData.nextPageToken;
+    } while (nextPageToken);
+
+    return [...new Set(videoIds)];
+  }
+
+  private upsertPublicVideo(channelId: string, video: NonNullable<YoutubeVideosResponse["items"]>[number], niche: string) {
+    const videoData = {
+      channelId,
+      title: video.snippet?.title ?? "Video de YouTube",
+      thumbnailUrl:
+        video.snippet?.thumbnails?.maxres?.url ??
+        video.snippet?.thumbnails?.high?.url ??
+        video.snippet?.thumbnails?.medium?.url ??
+        video.snippet?.thumbnails?.default?.url,
+      durationSec: parseYoutubeDuration(video.contentDetails?.duration),
+      viewCount: video.statistics?.viewCount ?? null,
+      publishedAt: video.snippet?.publishedAt ? new Date(video.snippet.publishedAt) : null,
+      niche,
+      language: "es",
+      isActive: true
+    };
+
+    return this.prisma.video.upsert({
+      where: { youtubeVideoId: video.id },
+      update: videoData,
+      create: {
+        ...videoData,
+        youtubeVideoId: video.id
+      }
+    });
   }
 
   private async resolveUploadsPlaylistId(youtubeChannelId: string) {
@@ -513,4 +524,14 @@ function parseYoutubeDuration(duration?: string) {
   const seconds = Number(match[3] ?? 0);
 
   return hours * 3600 + minutes * 60 + seconds;
+}
+
+function chunk<T>(items: T[], size: number) {
+  const chunks: T[][] = [];
+
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
+  }
+
+  return chunks;
 }
