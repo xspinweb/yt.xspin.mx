@@ -116,19 +116,13 @@ export class ChannelsService {
   }
 
   async findMyVideos(ownerUserId: string) {
-    const channel = await this.prisma.channel.findFirst({
-      where: {
-        ownerUserId,
-        isActive: true
-      },
-      include: {
-        videos: {
-          where: { isActive: true },
-          orderBy: { publishedAt: "desc" },
-          take: 48
-        }
-      }
-    });
+    let channel = await this.findActiveChannelWithVideos(ownerUserId);
+
+    if (channel?.youtubeChannelId && channel.videos.length === 0) {
+      const uploadsPlaylistId = await this.resolveUploadsPlaylistId(channel.youtubeChannelId);
+      await this.syncPublicVideos(channel.id, uploadsPlaylistId, channel.niche ?? "Tecnologia");
+      channel = await this.findActiveChannelWithVideos(ownerUserId);
+    }
 
     if (!channel) {
       return {
@@ -156,6 +150,22 @@ export class ChannelsService {
         shorts: formattedVideos.filter((video) => video.durationSec && video.durationSec <= 60)
       }
     };
+  }
+
+  private findActiveChannelWithVideos(ownerUserId: string) {
+    return this.prisma.channel.findFirst({
+      where: {
+        ownerUserId,
+        isActive: true
+      },
+      include: {
+        videos: {
+          where: { isActive: true },
+          orderBy: { publishedAt: "desc" },
+          take: 48
+        }
+      }
+    });
   }
 
   async connect(payload: ConnectChannelDto, ownerUserId: string) {
@@ -462,6 +472,28 @@ export class ChannelsService {
     );
 
     return videosData.items?.length ?? 0;
+  }
+
+  private async resolveUploadsPlaylistId(youtubeChannelId: string) {
+    const apiKey = this.config.get<string>("YOUTUBE_API_KEY");
+
+    if (!apiKey) {
+      throw new ServiceUnavailableException("Falta configurar YOUTUBE_API_KEY para sincronizar videos del canal.");
+    }
+
+    const params = new URLSearchParams({
+      part: "contentDetails",
+      id: youtubeChannelId,
+      key: apiKey
+    });
+    const response = await fetch(`https://www.googleapis.com/youtube/v3/channels?${params.toString()}`);
+    const data = (await response.json()) as YoutubeChannelsResponse;
+
+    if (!response.ok) {
+      throw new BadGatewayException(data.error?.message ?? "No pudimos consultar la lista de uploads del canal.");
+    }
+
+    return data.items?.[0]?.contentDetails?.relatedPlaylists?.uploads ?? null;
   }
 }
 
