@@ -1,11 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
-const GOOGLE_CLIENT_ID = "601233323658-iulc1bif0l33olttfth9tqod0tno4ivf.apps.googleusercontent.com";
-const YOUTUBE_READONLY_SCOPE = "https://www.googleapis.com/auth/youtube.readonly";
 
 type ConnectChannelResponse = {
   data?: {
@@ -14,33 +12,13 @@ type ConnectChannelResponse = {
   message?: string;
 };
 
-type GoogleTokenResponse = {
-  access_token?: string;
-  error?: string;
-};
-
-type GoogleTokenClient = {
-  requestAccessToken: (options?: { prompt?: string }) => void;
-};
-
-type GoogleOauth = {
-  accounts?: {
-    oauth2?: {
-      initTokenClient: (config: {
-        client_id: string;
-        scope: string;
-        callback: (response: GoogleTokenResponse) => void;
-      }) => GoogleTokenClient;
-    };
-  };
-};
-
 export default function ConnectChannelPage() {
   const router = useRouter();
-  const tokenClientRef = useRef<GoogleTokenClient | null>(null);
   const [isAllowed, setIsAllowed] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [authError, setAuthError] = useState("");
+  const [channelUrl, setChannelUrl] = useState("");
+  const [niche, setNiche] = useState("Tecnologia");
   const [connectError, setConnectError] = useState("");
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectedHandle, setConnectedHandle] = useState("");
@@ -68,7 +46,7 @@ export default function ConnectChannelPage() {
 
         return response.json();
       })
-      .then((data) => {
+      .then(() => {
         setIsAllowed(true);
       })
       .catch(() => {
@@ -79,57 +57,11 @@ export default function ConnectChannelPage() {
       .finally(() => {
         window.clearTimeout(timeout);
       });
-  }, [router]);
-
-  useEffect(() => {
-    const scriptId = "google-identity-services";
-    const initializeTokenClient = () => {
-      const google = window.google as unknown as GoogleOauth | undefined;
-      const oauth2 = google?.accounts?.oauth2;
-
-      if (!oauth2) {
-        return;
-      }
-
-      tokenClientRef.current = oauth2.initTokenClient({
-        client_id: GOOGLE_CLIENT_ID,
-        scope: YOUTUBE_READONLY_SCOPE,
-        callback: connectYoutubeChannel
-      });
-    };
-
-    if (document.getElementById(scriptId)) {
-      initializeTokenClient();
-      return;
-    }
-
-    const script = document.createElement("script");
-    script.id = scriptId;
-    script.src = "https://accounts.google.com/gsi/client";
-    script.async = true;
-    script.defer = true;
-    script.onload = initializeTokenClient;
-    document.head.appendChild(script);
   }, []);
 
-  function requestYoutubeAccess() {
+  async function connectChannel(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     setConnectError("");
-
-    if (!tokenClientRef.current) {
-      setConnectError("Google OAuth aun no esta listo. Intenta de nuevo en unos segundos.");
-      return;
-    }
-
-    setIsConnecting(true);
-    tokenClientRef.current.requestAccessToken({ prompt: "consent" });
-  }
-
-  async function connectYoutubeChannel(googleResponse: GoogleTokenResponse) {
-    if (googleResponse.error || !googleResponse.access_token) {
-      setIsConnecting(false);
-      setConnectError("No recibimos permiso para leer tu canal de YouTube.");
-      return;
-    }
 
     const token = window.localStorage.getItem("ytx_access_token");
 
@@ -138,8 +70,10 @@ export default function ConnectChannelPage() {
       return;
     }
 
+    setIsConnecting(true);
+
     try {
-      const response = await fetch(`${API_URL}/channels/connect-youtube`, {
+      const response = await fetch(`${API_URL}/channels/connect`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -147,7 +81,8 @@ export default function ConnectChannelPage() {
         },
         credentials: "include",
         body: JSON.stringify({
-          accessToken: googleResponse.access_token
+          channelUrl,
+          niche
         })
       });
       const data = (await response.json()) as ConnectChannelResponse;
@@ -156,7 +91,7 @@ export default function ConnectChannelPage() {
         throw new Error(data.message ?? "No pudimos conectar tu canal.");
       }
 
-      setConnectedHandle(data.data?.handle ?? "tu canal de YouTube");
+      setConnectedHandle(data.data?.handle ?? channelUrl);
       setIsSuccess(true);
     } catch (caughtError) {
       setConnectError(caughtError instanceof Error ? caughtError.message : "Ocurrio un error.");
@@ -211,7 +146,7 @@ export default function ConnectChannelPage() {
         <section className="connect-main connect-panel">
           <div className="connect-copy">
             <h1>Conecta tu canal de YouTube</h1>
-            <p>Conecta tu canal para empezar a participar en la plataforma y recibir exposicion real.</p>
+            <p>Agrega la URL publica de tu canal para empezar a participar en la plataforma.</p>
           </div>
           <div className="youtube-orbit">
             <span className="orbit-line orbit-line-one" />
@@ -222,17 +157,36 @@ export default function ConnectChannelPage() {
             <img src="/logos/youtube.svg" alt="" />
           </div>
           <ul className="connect-list">
-            <li>Usamos la cuenta de Google con la que iniciaste sesion</li>
-            <li>Solicitamos permiso para detectar su canal de YouTube</li>
-            <li>Despues importaremos sus videos publicos automaticamente</li>
+            <li>Google se usa solo para iniciar sesion en YT Xspin</li>
+            <li>No pedimos permisos privados de YouTube</li>
+            <li>Importaremos contenido publico del canal conectado</li>
           </ul>
-          <div className="connect-channel-form">
+          <form className="connect-form connect-channel-form" onSubmit={connectChannel}>
+            <label>
+              URL publica de tu canal
+              <input
+                value={channelUrl}
+                onChange={(event) => setChannelUrl(event.target.value)}
+                placeholder="https://www.youtube.com/@TuCanal"
+                required
+              />
+            </label>
+            <label>
+              Nicho principal
+              <select value={niche} onChange={(event) => setNiche(event.target.value)} required>
+                <option value="Tecnologia">Tecnologia</option>
+                <option value="Gaming">Gaming</option>
+                <option value="Educacion">Educacion</option>
+                <option value="Musica">Musica</option>
+                <option value="Lifestyle">Lifestyle</option>
+              </select>
+            </label>
             {connectError && <p className="connect-error">{connectError}</p>}
-            <button className="button button-solid connect-youtube-button" type="button" disabled={isConnecting} onClick={requestYoutubeAccess}>
-              {isConnecting ? "Conectando..." : "Autorizar y conectar YouTube"}
+            <button className="button button-solid connect-youtube-button" type="submit" disabled={isConnecting}>
+              {isConnecting ? "Conectando..." : "Conectar canal de YouTube"}
             </button>
-          </div>
-          <small>El canal conectado sera el canal de YouTube de la misma cuenta de Google autorizada.</small>
+          </form>
+          <small>Solo usamos informacion publica del canal. No accedemos a tu cuenta de YouTube.</small>
         </section>
       )}
     </main>
