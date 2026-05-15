@@ -1634,26 +1634,21 @@ em {
   gap: 18px;
 }
 
-.icon-only {
-  display: grid;
-  width: 42px;
-  height: 42px;
-  place-items: center;
-  border: 0;
-  background: transparent;
-  color: #b364ff;
-}
-
-.icon-only svg {
-  width: 24px;
-  height: 24px;
+.profile-menu {
+  position: relative;
 }
 
 .profile-chip {
   display: inline-flex;
+  min-height: 56px;
   align-items: center;
   gap: 10px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0 6px 0 0;
+  background: transparent;
   color: #ffffff;
+  cursor: pointer;
   font-size: 0.9rem;
   font-weight: 850;
 }
@@ -1662,6 +1657,45 @@ em {
   width: 16px;
   height: 16px;
   color: #aeb2c6;
+}
+
+.profile-dropdown {
+  position: absolute;
+  z-index: 20;
+  right: 0;
+  top: calc(100% + 12px);
+  width: 230px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  padding: 10px;
+  background: rgba(8, 11, 20, 0.98);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.36);
+}
+
+.profile-dropdown span {
+  display: block;
+  overflow: hidden;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 7px 8px 11px;
+  color: #bfc4d9;
+  font-size: 0.78rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-dropdown button {
+  width: 100%;
+  min-height: 40px;
+  margin-top: 8px;
+  border: 0;
+  border-radius: 7px;
+  background: rgba(126, 29, 255, 0.16);
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 850;
+  text-align: left;
+  padding: 0 10px;
 }
 
 .dashboard-avatar {
@@ -1675,6 +1709,11 @@ em {
   background: radial-gradient(circle at 45% 38%, #1e2236, #05070f);
   color: #ffffff;
   font-weight: 950;
+}
+
+.dashboard-avatar.user {
+  border-color: rgba(255, 255, 255, 0.8);
+  background: #b44ad6;
 }
 
 .dashboard-avatar.large {
@@ -1691,7 +1730,6 @@ em {
   object-fit: cover;
 }
 
-.secondary-action,
 .primary-action {
   display: inline-flex;
   min-height: 54px;
@@ -1703,17 +1741,6 @@ em {
   font-size: 0.94rem;
   font-weight: 900;
   text-decoration: none;
-}
-
-.secondary-action {
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  background: rgba(8, 11, 20, 0.72);
-  color: #ffffff;
-}
-
-.secondary-action svg {
-  width: 18px;
-  height: 18px;
 }
 
 .primary-action {
@@ -2240,7 +2267,6 @@ em {
     order: -1;
   }
 
-  .secondary-action,
   .primary-action {
     flex: 1 1 180px;
   }

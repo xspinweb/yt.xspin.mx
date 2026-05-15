@@ -73,6 +73,7 @@ const recentActivity = [
 export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<CurrentUser | null>(null);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
   useEffect(() => {
     const token = window.localStorage.getItem("ytx_access_token");
@@ -139,18 +140,26 @@ export default function DashboardPage() {
           </div>
 
           <div className="dashboard-actions">
-            <button className="icon-only" aria-label="Notificaciones" type="button">
-              <Icon name="bell" />
-            </button>
-            <div className="profile-chip">
-              <ChannelAvatar channel={channel} fallback={user.name} />
-              <strong>{channelTitle}</strong>
-              <Icon name="chevronDown" />
+            <div className="profile-menu">
+              <button
+                className="profile-chip"
+                type="button"
+                aria-expanded={isUserMenuOpen}
+                onClick={() => setIsUserMenuOpen((current) => !current)}
+              >
+                <UserAvatar user={user} />
+                <strong>{user.name}</strong>
+                <Icon name="chevronDown" />
+              </button>
+              {isUserMenuOpen && (
+                <div className="profile-dropdown">
+                  <span>{user.email}</span>
+                  <button type="button" onClick={logout}>
+                    Cerrar sesion
+                  </button>
+                </div>
+              )}
             </div>
-            <button className="secondary-action" type="button">
-              Subir video
-              <Icon name="upload" />
-            </button>
             <a className="primary-action" href="/connect-channel">
               Conectar canal
               <img src="/logos/youtube.svg" alt="" />
@@ -257,6 +266,14 @@ export default function DashboardPage() {
         </section>
       </section>
     </main>
+  );
+}
+
+function UserAvatar({ user }: { user: CurrentUser }) {
+  return (
+    <div className="dashboard-avatar user">
+      {user.avatarUrl ? <img src={user.avatarUrl} alt="" /> : <span>{user.name.slice(0, 1)}</span>}
+    </div>
   );
 }
 
