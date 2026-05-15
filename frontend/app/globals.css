@@ -1846,6 +1846,15 @@ em {
   text-decoration: none;
 }
 
+.see-all-button {
+  border: 0;
+  background: transparent;
+  color: #bd63ff;
+  cursor: pointer;
+  font-size: 0.92rem;
+  font-weight: 900;
+}
+
 .video-strip {
   position: relative;
   margin-bottom: 22px;
@@ -1855,6 +1864,10 @@ em {
   margin-top: 28px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   padding-top: 22px;
+}
+
+.video-carousel-wrap {
+  position: relative;
 }
 
 .video-row {
@@ -1949,10 +1962,10 @@ em {
   height: 17px;
 }
 
-.next-video {
+.carousel-nav {
   display: grid;
   position: absolute;
-  right: -8px;
+  z-index: 5;
   top: 50%;
   width: 52px;
   height: 52px;
@@ -1961,10 +1974,24 @@ em {
   border-radius: 50%;
   background: #12182b;
   color: #ffffff;
+  cursor: pointer;
   transform: translateY(-50%);
 }
 
-.next-video svg {
+.carousel-nav.previous {
+  left: -26px;
+}
+
+.carousel-nav.next {
+  right: -26px;
+}
+
+.carousel-nav:disabled {
+  cursor: not-allowed;
+  opacity: 0.38;
+}
+
+.carousel-nav svg {
   width: 28px;
   height: 28px;
 }

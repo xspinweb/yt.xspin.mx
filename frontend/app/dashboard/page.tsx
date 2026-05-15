@@ -266,18 +266,48 @@ function VideoCarousel({
   isLoading: boolean;
   variant?: "videos" | "shorts";
 }) {
+  const pageSize = variant === "shorts" ? 6 : 5;
+  const [startIndex, setStartIndex] = useState(0);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const canSlide = items.length > pageSize;
+  const maxStartIndex = Math.max(items.length - pageSize, 0);
+  const visibleItems = isExpanded ? items : items.slice(startIndex, startIndex + pageSize);
+
+  function showPrevious() {
+    setStartIndex((current) => Math.max(current - pageSize, 0));
+  }
+
+  function showNext() {
+    setStartIndex((current) => Math.min(current + pageSize, maxStartIndex));
+  }
+
+  function toggleExpanded() {
+    setIsExpanded((current) => !current);
+    setStartIndex(0);
+  }
+
   return (
     <div className="dashboard-video-section">
       <div className="section-title-row">
         <h2>{title}</h2>
-        {items.length > 0 && <a href="#">Ver todos</a>}
+        {items.length > pageSize && (
+          <button className="see-all-button" type="button" onClick={toggleExpanded}>
+            {isExpanded ? "Ver menos" : "Ver todos"}
+          </button>
+        )}
       </div>
       {isLoading ? (
         <p className="video-empty">Cargando videos del canal...</p>
       ) : items.length ? (
-        <div className={variant === "shorts" ? "video-row shorts-row" : "video-row"}>
-          {items.map((video) => (
-            <a className={variant === "shorts" ? "dashboard-video-card short" : "dashboard-video-card"} href={video.url ?? "#"} key={video.id} target="_blank" rel="noreferrer">
+        <div className="video-carousel-wrap">
+          {canSlide && !isExpanded && (
+            <button className="carousel-nav previous" aria-label={`Videos anteriores de ${title}`} type="button" onClick={showPrevious} disabled={startIndex === 0}>
+              <Icon name="chevronLeft" />
+            </button>
+          )}
+          <div className={variant === "shorts" ? "video-row shorts-row" : "video-row"}>
+            {visibleItems.map((video) => (
+              <a className={variant === "shorts" ? "dashboard-video-card short" : "dashboard-video-card"} href={video.url ?? "#"} key={video.id} target="_blank" rel="noreferrer">
               <div className="video-thumb">
                 {video.thumbnailUrl ? <img src={video.thumbnailUrl} alt="" /> : <div className="thumb-placeholder">YT</div>}
                 <span>{formatDuration(video.durationSec)}</span>
@@ -288,10 +318,13 @@ function VideoCarousel({
                 {formatCompact(video.viewCount, "0")} visualizaciones
               </p>
             </a>
-          ))}
-          <button className="next-video" aria-label={`Siguiente ${title}`} type="button">
-            <Icon name="chevronRight" />
-          </button>
+            ))}
+          </div>
+          {canSlide && !isExpanded && (
+            <button className="carousel-nav next" aria-label={`Siguientes videos de ${title}`} type="button" onClick={showNext} disabled={startIndex >= maxStartIndex}>
+              <Icon name="chevronRight" />
+            </button>
+          )}
         </div>
       ) : (
         <p className="video-empty">Aun no encontramos {title.toLowerCase()} publicos para este canal.</p>
@@ -419,6 +452,7 @@ function Icon({ name }: { name: string }) {
     ),
     check: <path d="m5 12 4 4L19 6" />,
     chevronDown: <path d="m6 9 6 6 6-6" />,
+    chevronLeft: <path d="m15 18-6-6 6-6" />,
     chevronRight: <path d="m9 18 6-6-6-6" />,
     eye: (
       <>
