@@ -48,7 +48,7 @@ export class ChannelsService {
 
   async connect(payload: ConnectChannelDto, ownerUserId: string) {
     const handle = this.normalizeHandle(payload.channelUrl);
-    return this.upsertConnectedChannel(ownerUserId, handle, payload.niche);
+    return this.upsertConnectedChannel(ownerUserId, handle, payload.niche, null);
   }
 
   async connectGoogleOwnedChannel(ownerUserId: string) {
@@ -61,7 +61,7 @@ export class ChannelsService {
     }
 
     const handle = this.createGoogleLinkedHandle(user.email);
-    return this.upsertConnectedChannel(ownerUserId, handle, user.niche ?? "Tecnologia", user.googleId);
+    return this.upsertConnectedChannel(ownerUserId, handle, user.niche ?? "Tecnologia", `google:${user.googleId}`);
   }
 
   async connectYoutubeChannel(accessToken: string, ownerUserId: string) {
@@ -95,7 +95,13 @@ export class ChannelsService {
     };
   }
 
-  private async upsertConnectedChannel(ownerUserId: string, handle: string, niche: string, youtubeChannelId?: string, title = handle) {
+  private async upsertConnectedChannel(
+    ownerUserId: string,
+    handle: string,
+    niche: string,
+    youtubeChannelId: string | null = null,
+    title = handle
+  ) {
     const existingChannel = await this.prisma.channel.findFirst({
       where: {
         ownerUserId,
@@ -110,7 +116,7 @@ export class ChannelsService {
             title,
             handle,
             niche,
-            youtubeChannelId: youtubeChannelId ?? existingChannel.youtubeChannelId,
+            youtubeChannelId,
             language: "es",
             isActive: true
           }
@@ -121,7 +127,7 @@ export class ChannelsService {
             title,
             handle,
             niche,
-            youtubeChannelId,
+            youtubeChannelId: youtubeChannelId ?? undefined,
             language: "es",
             isActive: true
           }
