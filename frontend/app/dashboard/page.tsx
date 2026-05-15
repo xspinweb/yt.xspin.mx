@@ -143,7 +143,7 @@ export default function DashboardPage() {
       <section className="dashboard-workspace">
         <header className="dashboard-hero-bar">
           <div>
-            <h1>Hola, Creador!</h1>
+            <h1>Hola, {user.name}!</h1>
             <p>Aqui tienes un resumen de tu actividad en YT XSpin.</p>
           </div>
 
