@@ -1,0 +1,9 @@
+<svg width="300" height="82" viewBox="0 0 300 82" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="300" height="82" rx="10" fill="transparent"/>
+  <image href="/logos/xspin-mark.svg" x="0" y="5" width="86" height="65"/>
+  <g fill="#F7F4FF">
+    <path d="M96 27C96 18 103 12 112 12H190C195 12 198 15 198 20V31C198 36 195 39 190 39H119C116 39 114 41 114 44C114 47 116 49 119 49H178C190 49 200 59 200 71V72H96V58H177C181 58 184 55 184 51C184 47 181 44 177 44H112C103 44 96 37 96 28V27Z"/>
+    <path d="M207 12H257C278 12 293 27 293 47C293 67 278 82 257 82H224V72H256C268 72 277 62 277 48C277 34 268 24 256 24H224V72H207V12Z"/>
+    <path d="M74 49H94V67H74V49Z"/>
+  </g>
+</svg>

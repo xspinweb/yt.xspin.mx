@@ -1,0 +1,21 @@
+{
+  "name": "yt-xspin",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Creator discovery platform for emerging YouTube creators.",
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace frontend",
+    "dev:frontend": "npm run dev --workspace frontend",
+    "dev:backend": "npm run start:dev --workspace backend",
+    "build": "npm run build --workspace frontend && npm run build --workspace backend",
+    "build:frontend": "npm run build --workspace frontend",
+    "build:backend": "npm run build --workspace backend",
+    "start:frontend": "npm run start --workspace frontend",
+    "start:backend": "npm run start:prod --workspace backend",
+    "lint": "npm run lint --workspace frontend && npm run lint --workspace backend"
+  }
+}

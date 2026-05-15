@@ -1,0 +1,150 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ExchangeTaskType {
+  VIEW
+  SUBSCRIBE
+}
+
+enum ExchangeTaskStatus {
+  PENDING
+  ASSIGNED
+  COMPLETED
+  EXPIRED
+  CANCELLED
+}
+
+enum UserActionType {
+  VIEW
+  SUBSCRIBE
+}
+
+enum AuthProvider {
+  GOOGLE
+  EMAIL
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+model User {
+  id             String         @id @default(uuid())
+  name           String
+  email          String         @unique
+  passwordHash   String?
+  googleId       String?        @unique
+  avatarUrl      String?
+  provider       AuthProvider   @default(EMAIL)
+  role           UserRole       @default(USER)
+  isActive       Boolean        @default(true)
+  displayName    String?
+  language       String?        @default("es")
+  niche          String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  channels       Channel[]
+  actions        UserAction[]
+  ownedTasks     ExchangeTask[] @relation("TaskOwner")
+  assignedTasks  ExchangeTask[] @relation("TaskAssignee")
+
+  @@map("users")
+}
+
+model Channel {
+  id             String         @id @default(uuid())
+  ownerUserId    String
+  youtubeChannelId String?      @unique
+  handle         String?
+  title          String
+  niche          String?
+  language       String?        @default("es")
+  isActive       Boolean        @default(true)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  owner          User           @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  videos         Video[]
+  targetActions  UserAction[]
+  targetTasks    ExchangeTask[]
+
+  @@index([ownerUserId])
+  @@index([niche, language])
+  @@map("channels")
+}
+
+model Video {
+  id             String         @id @default(uuid())
+  channelId      String
+  youtubeVideoId String?        @unique
+  title          String
+  thumbnailUrl   String?
+  durationSec    Int?
+  publishedAt    DateTime?
+  niche          String?
+  language       String?        @default("es")
+  isActive       Boolean        @default(true)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  channel        Channel        @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  targetActions  UserAction[]
+  targetTasks    ExchangeTask[]
+
+  @@index([channelId])
+  @@index([isActive, publishedAt])
+  @@index([niche, language])
+  @@map("videos")
+}
+
+model UserAction {
+  id              String         @id @default(uuid())
+  userId          String
+  actionType      UserActionType
+  targetVideoId   String?
+  targetChannelId String?
+  isValid         Boolean        @default(false)
+  validationData  Json?
+  createdAt       DateTime       @default(now())
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  targetVideo     Video?         @relation(fields: [targetVideoId], references: [id], onDelete: SetNull)
+  targetChannel   Channel?       @relation(fields: [targetChannelId], references: [id], onDelete: SetNull)
+  generatedTasks  ExchangeTask[]
+
+  @@index([userId, actionType, createdAt])
+  @@index([targetVideoId, actionType, createdAt])
+  @@index([targetChannelId, actionType, createdAt])
+  @@map("user_actions")
+}
+
+model ExchangeTask {
+  id              String             @id @default(uuid())
+  ownerUserId     String
+  type            ExchangeTaskType
+  targetVideoId   String?
+  targetChannelId String?
+  assignedToUserId String?
+  status          ExchangeTaskStatus @default(PENDING)
+  sourceActionId  String?
+  createdAt       DateTime           @default(now())
+  assignedAt      DateTime?
+  completedAt     DateTime?
+  expiresAt       DateTime?
+  owner           User               @relation("TaskOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
+  assignee        User?              @relation("TaskAssignee", fields: [assignedToUserId], references: [id], onDelete: SetNull)
+  targetVideo     Video?             @relation(fields: [targetVideoId], references: [id], onDelete: SetNull)
+  targetChannel   Channel?           @relation(fields: [targetChannelId], references: [id], onDelete: SetNull)
+  sourceAction    UserAction?        @relation(fields: [sourceActionId], references: [id], onDelete: SetNull)
+
+  @@index([status, type, createdAt])
+  @@index([ownerUserId, status])
+  @@index([assignedToUserId, status])
+  @@index([targetVideoId])
+  @@index([targetChannelId])
+  @@map("exchange_tasks")
+}
