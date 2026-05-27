@@ -248,14 +248,17 @@ export default function Home() {
               </div>
             </div>
           </article>
-          {authMode && (
-            <div className="hero-auth-panel">
-              <button className="auth-close" type="button" aria-label="Cerrar" onClick={() => setAuthMode(null)}>×</button>
-              <AuthCard initialMode={authMode} compact autoRedirect={false} />
-            </div>
-          )}
         </div>
       </section>
+
+      {authMode && (
+        <div className="auth-overlay-panel" role="dialog" aria-modal="true">
+          <div className="hero-auth-panel">
+            <button className="auth-close" type="button" aria-label="Cerrar" onClick={() => setAuthMode(null)}>×</button>
+            <AuthCard initialMode={authMode} compact autoRedirect={false} />
+          </div>
+        </div>
+      )}
 
       <section className="how" id="como-funciona">
         <div className="section-heading">

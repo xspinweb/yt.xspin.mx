@@ -402,11 +402,21 @@ em {
   transform: translateX(-50%);
 }
 
+.auth-overlay-panel {
+  position: fixed;
+  z-index: 120;
+  inset: 0;
+  display: grid;
+  align-items: start;
+  justify-items: center;
+  overflow-y: auto;
+  padding: 96px 18px 24px;
+  background: rgba(2, 4, 10, 0.58);
+  backdrop-filter: blur(10px);
+}
+
 .hero-auth-panel {
-  position: absolute;
-  top: 24px;
-  right: 0;
-  z-index: 12;
+  position: relative;
   width: 320px;
 }
 
@@ -2501,6 +2511,15 @@ em {
     width: 100%;
     min-height: 46px;
     justify-content: center;
+  }
+
+  .auth-overlay-panel {
+    justify-items: center;
+    padding: 108px 16px 24px;
+  }
+
+  .hero-auth-panel {
+    width: min(100%, 320px);
   }
 
   .hero {
