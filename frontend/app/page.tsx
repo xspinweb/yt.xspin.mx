@@ -111,6 +111,7 @@ export default function Home() {
   const [carouselIndex, setCarouselIndex] = useState(0);
   const [openFaq, setOpenFaq] = useState(0);
   const [authMode, setAuthMode] = useState<"login" | "register" | null>(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const feedVideos = useMemo(() => {
     const videos = feedByCategory[activeCategory];
@@ -127,23 +128,39 @@ export default function Home() {
   }
 
   function openAuth(mode: "login" | "register") {
+    setIsMenuOpen(false);
     setAuthMode(mode);
+  }
+
+  function closeMenu() {
+    setIsMenuOpen(false);
   }
 
   return (
     <main>
-      <header className="site-header">
+      <header className={isMenuOpen ? "site-header menu-open" : "site-header"}>
         <a className="logo" href="#inicio" aria-label="YT Xspin inicio">
           <img src="/logos/xspin-mark.svg" alt="" />
           <span>SPIN</span>
         </a>
+        <button
+          className="mobile-menu-toggle"
+          type="button"
+          aria-label={isMenuOpen ? "Cerrar menu" : "Abrir menu"}
+          aria-expanded={isMenuOpen}
+          onClick={() => setIsMenuOpen((current) => !current)}
+        >
+          <span />
+          <span />
+          <span />
+        </button>
         <nav className="main-nav" aria-label="Navegacion principal">
-          <a className="active" href="#inicio">Inicio</a>
-          <a href="#como-funciona">Como funciona</a>
-          <a href="#beneficios">Beneficios</a>
-          <a href="#funciones">Funciones</a>
-          <a href="#faq">FAQ</a>
-          <a href="#precios">Precios</a>
+          <a className="active" href="#inicio" onClick={closeMenu}>Inicio</a>
+          <a href="#como-funciona" onClick={closeMenu}>Como funciona</a>
+          <a href="#beneficios" onClick={closeMenu}>Beneficios</a>
+          <a href="#funciones" onClick={closeMenu}>Funciones</a>
+          <a href="#faq" onClick={closeMenu}>FAQ</a>
+          <a href="#precios" onClick={closeMenu}>Precios</a>
         </nav>
         <div className="header-actions">
           <button className="header-login" type="button" onClick={() => openAuth("login")}>Iniciar sesion</button>
