@@ -1555,7 +1555,7 @@ em {
 }
 
 .native-ad-slot {
-  min-height: 40px;
+  min-height: 96px;
 }
 
 .banner-ad-scale {
@@ -1563,6 +1563,18 @@ em {
   min-height: 60px;
   transform: scale(0.43);
   transform-origin: top left;
+}
+
+.ad-pending {
+  display: grid;
+  min-height: 48px;
+  margin: 0;
+  place-items: center;
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  color: #8e93aa;
+  font-size: 0.74rem;
+  text-align: center;
 }
 
 .invite-panel {

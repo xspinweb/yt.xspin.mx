@@ -449,7 +449,23 @@ function DashboardSidebar({ active, onLogout }: { active: string; onLogout: () =
 }
 
 function AdsterraNavigationAds() {
+  const [hasRenderedAd, setHasRenderedAd] = useState(false);
+
   useEffect(() => {
+    const nativeSlot = document.getElementById("container-4a5fc4d2e25c6aa8db9476184ab4c42b");
+    const bannerSlot = document.getElementById("adsterra-inline-banner-slot");
+    const observer = new MutationObserver(() => {
+      setHasRenderedAd(Boolean(nativeSlot?.childNodes.length || bannerSlot?.childNodes.length));
+    });
+
+    if (nativeSlot) {
+      observer.observe(nativeSlot, { childList: true, subtree: true });
+    }
+
+    if (bannerSlot) {
+      observer.observe(bannerSlot, { childList: true, subtree: true });
+    }
+
     appendAdScript("adsterra-social-one", "https://pl29570164.effectivecpmnetwork.com/9e/10/81/9e1081843792891b202e9ac13af4238b.js");
     appendAdScript("adsterra-native-banner", "https://pl29570165.effectivecpmnetwork.com/4a5fc4d2e25c6aa8db9476184ab4c42b/invoke.js", true);
 
@@ -462,6 +478,12 @@ function AdsterraNavigationAds() {
     };
     appendAdScript("adsterra-iframe-banner", "https://www.highperformanceformat.com/9b29d12b3983f892fe2656af50fd8e09/invoke.js", false, "adsterra-inline-banner-slot");
     appendAdScript("adsterra-social-two", "https://pl29570169.effectivecpmnetwork.com/7f/24/bc/7f24bc45dfd1616e9f97b031a974f74f.js");
+
+    window.setTimeout(() => {
+      setHasRenderedAd(Boolean(nativeSlot?.childNodes.length || bannerSlot?.childNodes.length));
+    }, 2500);
+
+    return () => observer.disconnect();
   }, []);
 
   return (
@@ -469,6 +491,7 @@ function AdsterraNavigationAds() {
       <span>Publicidad</span>
       <div className="native-ad-slot" id="container-4a5fc4d2e25c6aa8db9476184ab4c42b" />
       <div className="banner-ad-scale" id="adsterra-inline-banner-slot" />
+      {!hasRenderedAd && <p className="ad-pending">Cargando anuncio...</p>}
     </section>
   );
 }
