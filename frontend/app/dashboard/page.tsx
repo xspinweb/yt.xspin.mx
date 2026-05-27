@@ -42,6 +42,18 @@ type ChannelVideosResponse = {
   };
 };
 
+declare global {
+  interface Window {
+    atOptions?: {
+      key: string;
+      format: string;
+      height: number;
+      width: number;
+      params: Record<string, unknown>;
+    };
+  }
+}
+
 const recentActivity = [
   { icon: "eye", title: "Tu video fue visto completamente", time: "Hace 2 min", result: "+1 vista", tone: "purple" },
   { icon: "userPlus", title: "Nuevo suscriptor obtenido", time: "Hace 10 min", result: "+1 suscripcion", tone: "pink" },
@@ -418,6 +430,8 @@ function DashboardSidebar({ active, onLogout }: { active: string; onLogout: () =
         ))}
       </nav>
 
+      <AdsterraNavigationAds />
+
       <div className="invite-panel">
         <strong>Descubre. Mira. Crece.</strong>
         <p>Conecta, participa y gana exposicion real.</p>
@@ -432,6 +446,49 @@ function DashboardSidebar({ active, onLogout }: { active: string; onLogout: () =
       </button>
     </aside>
   );
+}
+
+function AdsterraNavigationAds() {
+  useEffect(() => {
+    appendAdScript("adsterra-social-one", "https://pl29570164.effectivecpmnetwork.com/9e/10/81/9e1081843792891b202e9ac13af4238b.js");
+    appendAdScript("adsterra-native-banner", "https://pl29570165.effectivecpmnetwork.com/4a5fc4d2e25c6aa8db9476184ab4c42b/invoke.js", true);
+
+    window.atOptions = {
+      key: "9b29d12b3983f892fe2656af50fd8e09",
+      format: "iframe",
+      height: 60,
+      width: 468,
+      params: {}
+    };
+    appendAdScript("adsterra-iframe-banner", "https://www.highperformanceformat.com/9b29d12b3983f892fe2656af50fd8e09/invoke.js", false, "adsterra-inline-banner-slot");
+    appendAdScript("adsterra-social-two", "https://pl29570169.effectivecpmnetwork.com/7f/24/bc/7f24bc45dfd1616e9f97b031a974f74f.js");
+  }, []);
+
+  return (
+    <section className="nav-ad-zone" aria-label="Publicidad">
+      <span>Publicidad</span>
+      <div className="native-ad-slot" id="container-4a5fc4d2e25c6aa8db9476184ab4c42b" />
+      <div className="banner-ad-scale" id="adsterra-inline-banner-slot" />
+    </section>
+  );
+}
+
+function appendAdScript(id: string, src: string, async = false, targetId?: string) {
+  if (document.getElementById(id)) {
+    return;
+  }
+
+  const script = document.createElement("script");
+  script.id = id;
+  script.src = src;
+  script.async = async;
+
+  if (async) {
+    script.dataset.cfasync = "false";
+  }
+
+  const target = targetId ? document.getElementById(targetId) : null;
+  (target ?? document.body).appendChild(script);
 }
 
 function Icon({ name }: { name: string }) {

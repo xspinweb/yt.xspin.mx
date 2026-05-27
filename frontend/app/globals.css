@@ -1535,6 +1535,36 @@ em {
   flex: 0 0 auto;
 }
 
+.nav-ad-zone {
+  display: grid;
+  gap: 10px;
+  margin: 18px 0 0;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.nav-ad-zone > span {
+  color: #8e93aa;
+  font-size: 0.68rem;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.native-ad-slot {
+  min-height: 40px;
+}
+
+.banner-ad-scale {
+  width: 468px;
+  min-height: 60px;
+  transform: scale(0.43);
+  transform-origin: top left;
+}
+
 .invite-panel {
   margin-top: auto;
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -2247,6 +2277,7 @@ em {
   }
 
   .invite-panel,
+  .nav-ad-zone,
   .logout-link {
     display: none;
   }
