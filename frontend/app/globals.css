@@ -1572,11 +1572,12 @@ em {
   flex: 0 0 auto;
 }
 
-.nav-ad-zone {
+.dashboard-ad-slot {
   width: 100%;
-  min-height: 90px;
-  margin: 18px 0 18px;
+  min-height: 96px;
+  margin: 0 0 22px;
   overflow: hidden;
+  border-radius: 10px;
 }
 
 .invite-panel {
@@ -2290,11 +2291,6 @@ em {
     font-size: 0;
   }
 
-  .nav-ad-zone {
-    min-height: 72px;
-    margin: 16px 0;
-  }
-
   .invite-panel,
   .logout-link {
     display: none;
@@ -2401,16 +2397,16 @@ em {
     border-radius: 14px;
   }
 
-  .nav-ad-zone {
-    min-height: 80px;
-    margin: 16px 0 0;
-  }
-
   .dashboard-workspace {
     width: 100%;
     max-width: 100%;
     overflow: hidden;
     padding: 28px 18px 92px;
+  }
+
+  .dashboard-ad-slot {
+    min-height: 88px;
+    margin-bottom: 18px;
   }
 
   .dashboard-hero-bar {

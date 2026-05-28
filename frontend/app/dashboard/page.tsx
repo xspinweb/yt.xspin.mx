@@ -5,6 +5,9 @@ import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
+const ADSTERRA_NATIVE_SCRIPT = "https://pl29570165.effectivecpmnetwork.com/4a5fc4d2e25c6aa8db9476184ab4c42b/invoke.js";
+const ADSTERRA_NATIVE_CONTAINER_ID = "container-4a5fc4d2e25c6aa8db9476184ab4c42b";
+const ADSTERRA_SOCIAL_BAR_SCRIPT = "https://pl29570169.effectivecpmnetwork.com/7f/24/bc/7f24bc45dfd1616e9f97b031a974f74f.js";
 
 type CurrentUser = {
   name: string;
@@ -138,6 +141,7 @@ export default function DashboardPage() {
 
   return (
     <main className="dashboard-shell">
+      <SocialBarAd />
       <DashboardSidebar active="Dashboard" onLogout={logout} />
 
       <section className="dashboard-workspace">
@@ -174,6 +178,8 @@ export default function DashboardPage() {
             </a>
           </div>
         </header>
+
+        <NativeAdSlot />
 
         <section className="dashboard-stat-grid">
           {metricCards.map((metric) => (
@@ -418,8 +424,6 @@ function DashboardSidebar({ active, onLogout }: { active: string; onLogout: () =
         ))}
       </nav>
 
-      <DashboardAds />
-
       <div className="invite-panel">
         <strong>Descubre. Mira. Crece.</strong>
         <p>Conecta, participa y gana exposicion real.</p>
@@ -436,15 +440,40 @@ function DashboardSidebar({ active, onLogout }: { active: string; onLogout: () =
   );
 }
 
-function DashboardAds() {
-  return (
-    <section className="nav-ad-zone" aria-label="Publicidad">
-      <script async data-cfasync="false" src="https://pl29570165.effectivecpmnetwork.com/4a5fc4d2e25c6aa8db9476184ab4c42b/invoke.js"></script>
-      <div id="container-4a5fc4d2e25c6aa8db9476184ab4c42b"></div>
+function NativeAdSlot() {
+  useEffect(() => {
+    if (document.querySelector(`script[data-adsterra-native="${ADSTERRA_NATIVE_CONTAINER_ID}"]`)) {
+      return;
+    }
 
-      <script src="https://pl29570169.effectivecpmnetwork.com/7f/24/bc/7f24bc45dfd1616e9f97b031a974f74f.js"></script>
+    const script = document.createElement("script");
+    script.async = true;
+    script.dataset.cfasync = "false";
+    script.dataset.adsterraNative = ADSTERRA_NATIVE_CONTAINER_ID;
+    script.src = ADSTERRA_NATIVE_SCRIPT;
+    document.body.appendChild(script);
+  }, []);
+
+  return (
+    <section className="dashboard-ad-slot" aria-label="Publicidad">
+      <div id={ADSTERRA_NATIVE_CONTAINER_ID}></div>
     </section>
   );
+}
+
+function SocialBarAd() {
+  useEffect(() => {
+    if (document.querySelector(`script[data-adsterra-social-bar="true"]`)) {
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.dataset.adsterraSocialBar = "true";
+    script.src = ADSTERRA_SOCIAL_BAR_SCRIPT;
+    document.body.appendChild(script);
+  }, []);
+
+  return null;
 }
 
 function Icon({ name }: { name: string }) {
