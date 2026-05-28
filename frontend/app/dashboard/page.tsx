@@ -418,6 +418,8 @@ function DashboardSidebar({ active, onLogout }: { active: string; onLogout: () =
         ))}
       </nav>
 
+      <DashboardAds />
+
       <div className="invite-panel">
         <strong>Descubre. Mira. Crece.</strong>
         <p>Conecta, participa y gana exposicion real.</p>
@@ -431,6 +433,17 @@ function DashboardSidebar({ active, onLogout }: { active: string; onLogout: () =
         Cerrar sesion
       </button>
     </aside>
+  );
+}
+
+function DashboardAds() {
+  return (
+    <section className="nav-ad-zone" aria-label="Publicidad">
+      <script async data-cfasync="false" src="https://pl29570165.effectivecpmnetwork.com/4a5fc4d2e25c6aa8db9476184ab4c42b/invoke.js"></script>
+      <div id="container-4a5fc4d2e25c6aa8db9476184ab4c42b"></div>
+
+      <script src="https://pl29570169.effectivecpmnetwork.com/7f/24/bc/7f24bc45dfd1616e9f97b031a974f74f.js"></script>
+    </section>
   );
 }
 
