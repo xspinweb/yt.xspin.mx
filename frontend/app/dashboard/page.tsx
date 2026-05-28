@@ -418,8 +418,6 @@ function DashboardSidebar({ active, onLogout }: { active: string; onLogout: () =
         ))}
       </nav>
 
-      <AdsterraNavigationAds />
-
       <div className="invite-panel">
         <strong>Descubre. Mira. Crece.</strong>
         <p>Conecta, participa y gana exposicion real.</p>
@@ -433,34 +431,6 @@ function DashboardSidebar({ active, onLogout }: { active: string; onLogout: () =
         Cerrar sesion
       </button>
     </aside>
-  );
-}
-
-function AdsterraNavigationAds() {
-  return (
-    <section className="nav-ad-zone" aria-label="Publicidad">
-      <script src="https://pl29570164.effectivecpmnetwork.com/9e/10/81/9e1081843792891b202e9ac13af4238b.js"></script>
-
-      <script async data-cfasync="false" src="https://pl29570165.effectivecpmnetwork.com/4a5fc4d2e25c6aa8db9476184ab4c42b/invoke.js"></script>
-      <div id="container-4a5fc4d2e25c6aa8db9476184ab4c42b"></div>
-
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `
-  atOptions = {
-    'key' : '9b29d12b3983f892fe2656af50fd8e09',
-    'format' : 'iframe',
-    'height' : 60,
-    'width' : 468,
-    'params' : {}
-  };
-`
-        }}
-      />
-      <script src="https://www.highperformanceformat.com/9b29d12b3983f892fe2656af50fd8e09/invoke.js"></script>
-
-      <script src="https://pl29570169.effectivecpmnetwork.com/7f/24/bc/7f24bc45dfd1616e9f97b031a974f74f.js"></script>
-    </section>
   );
 }
 
