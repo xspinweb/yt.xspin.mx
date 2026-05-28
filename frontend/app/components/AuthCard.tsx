@@ -102,7 +102,7 @@ export function AuthCard({
       window.google.accounts.id.renderButton(googleButtonRef.current, {
         theme: "outline",
         size: "large",
-        width: compact ? 270 : 400,
+        width: compact ? 300 : 400,
         text: "continue_with",
         shape: "rectangular"
       });

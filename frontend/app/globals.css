@@ -417,12 +417,12 @@ em {
 
 .hero-auth-panel {
   position: relative;
-  width: 320px;
+  width: 360px;
 }
 
 .hero-auth-panel .auth-card {
   width: 100%;
-  padding: 18px 22px 18px;
+  padding: 22px 24px 20px;
   border-radius: 8px;
   background: rgba(8, 11, 20, 0.96);
   box-shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
@@ -932,18 +932,24 @@ em {
 }
 
 .auth-card-compact .auth-heading {
-  margin-bottom: 12px;
+  margin-bottom: 18px;
 }
 
 .auth-card-compact .auth-heading h1 {
-  font-size: 1.05rem;
+  font-size: 1.2rem;
 }
 
 .auth-card-compact .auth-heading p,
 .auth-card-compact .auth-divider span,
 .auth-card-compact .auth-switch,
 .auth-card-compact .auth-link {
-  font-size: 0.66rem;
+  font-size: 0.8rem;
+}
+
+.auth-card-compact .google-button-wrap {
+  min-height: 46px;
+  margin: 0 auto;
+  overflow: visible;
 }
 
 .auth-card-compact .auth-divider {
@@ -2478,11 +2484,15 @@ em {
 
   .auth-overlay-panel {
     justify-items: center;
-    padding: 108px 16px 24px;
+    padding: 92px 18px 24px;
   }
 
   .hero-auth-panel {
-    width: min(100%, 320px);
+    width: min(100%, 360px);
+  }
+
+  .hero-auth-panel .auth-card {
+    padding: 24px 18px 20px;
   }
 
   .hero {
